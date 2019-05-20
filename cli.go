@@ -133,6 +133,7 @@ func (c *CLI) Run() error {
 			return err
 		}
 		fmt.Print(output)
+		return nil
 	}
 
 	command, ok := c.Commands[commandName]

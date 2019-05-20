@@ -5,43 +5,15 @@
 package cli_test
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"git.stormbase.io/cbednarski/cli"
 )
-
-func TestCLI_Run(t *testing.T) {
-	backup := os.Args
-	os.Args = []string{"testapp", "testcommand", "testarg1", "testarg2", "testarg3"}
-	defer func() { os.Args = backup }()
-
-	var output []string
-	expectedOutput := []string{"testarg3", "testarg2", "testarg1"}
-
-	app := cli.CLI{
-		Commands: map[string]*cli.Command{
-			"testcommand": {
-				Run: func(args []string) error {
-					// reverse the list of args
-					for i := len(args) - 1; i >= 0; i-- {
-						output = append(output, args[i])
-					}
-					return nil
-				},
-			},
-		},
-	}
-
-	if err := app.Run(); err != nil {
-		t.Error(err)
-	}
-
-	if !reflect.DeepEqual(output, expectedOutput) {
-		t.Errorf("Expected %#v, found %#v", expectedOutput, output)
-	}
-}
 
 func TestSortedCommandNames(t *testing.T) {
 	commands := map[string]*cli.Command{
@@ -298,4 +270,260 @@ func TestPadRight(t *testing.T) {
 			t.Errorf("Expected %q, found %q with input (%q, %d)", testCase.Expected, actual, testCase.Str, testCase.Width)
 		}
 	}
+}
+
+func redirectIO() (cleanup func(), stdout *os.File) {
+	ogArgs := os.Args
+	ogStdout := os.Stdout
+
+	cleanup = func() {
+		stdout.Close()
+
+		os.Args = ogArgs
+		os.Stdout = ogStdout
+	}
+
+	var err error
+
+	stdout, err = ioutil.TempFile("", "cli-test-stdout")
+	if err != nil {
+		panic(err)
+	}
+	os.Stdout = stdout
+
+	return
+}
+
+//func TestExitWithError(t *testing.T) {
+//	cleanup, _, stderr := redirectIO()
+//
+//	err := fmt.Errorf("pie pie pie!")
+//	cli.ExitWithError(err)
+//
+//	cleanup()
+//
+//	data, err := ioutil.ReadFile(stderr.Name())
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	if string(data) != err.Error() {
+//		t.Errorf("Expected %q, found %q", err.Error(), string(data))
+//	}
+//}
+
+func TestCLI_Run(t *testing.T) {
+	app := &cli.CLI{
+		Commands: map[string]*cli.Command{
+			"reverse": {
+				Summary: "reverse the arguments",
+				Run: func(args []string) error {
+					// reverse the list of args
+					var output []string
+					for i := len(args) - 1; i >= 0; i-- {
+						output = append(output, args[i])
+					}
+					fmt.Println(strings.Join(output, " "))
+					return nil
+				},
+				Help: "All arguments passed to the command will be displayed in reverse order",
+			},
+			"todo":{},
+			"error": {
+				Run: func(args []string) error {
+					return fmt.Errorf("error error error!")
+				},
+			},
+		},
+	}
+
+	t.Run("app name", func(t *testing.T) {
+		cleanup, _ := redirectIO()
+		defer cleanup()
+
+		expectedAppName := "testapp"
+		os.Args = []string{expectedAppName}
+		if err := app.Run(); err != nil {
+			t.Fatal(err)
+		}
+
+		if app.Name != expectedAppName {
+			t.Errorf("Expected %q, found %q", expectedAppName, app.Name)
+		}
+	})
+
+	t.Run("basic invocation", func(t *testing.T) {
+		cleanup, stdout := redirectIO()
+		defer cleanup()
+
+		os.Args = []string{"testapp"}
+		if err := app.Run(); err != nil {
+			t.Fatal(err)
+		}
+
+		cleanup() // Cleanup to flush stdout/err to disk
+		output, err := ioutil.ReadFile(stdout.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expectedOutput := cli.CommandHelp(app)
+
+		if string(output) != expectedOutput {
+			t.Errorf("--- Expected Output ---\n%s\n--- Actual Output ---\n%s\n", expectedOutput, string(output))
+		}
+	})
+
+	t.Run("--help", func(t *testing.T) {
+		cleanup, stdout := redirectIO()
+		defer cleanup()
+
+		os.Args = []string{"testapp", "--help"}
+		if err := app.Run(); err != nil {
+			t.Fatal(err)
+		}
+
+		cleanup() // Cleanup to flush stdout/err to disk
+		output, err := ioutil.ReadFile(stdout.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expectedOutput := cli.CommandHelp(app)
+
+		if string(output) != expectedOutput {
+			t.Errorf("--- Expected Output ---\n%s\n--- Actual Output ---\n%s\n", expectedOutput, string(output))
+		}
+	})
+
+	t.Run("command invocation", func(t *testing.T){
+		cleanup, stdout := redirectIO()
+		defer cleanup()
+
+		os.Args = []string{"testapp", "reverse", "testarg1", "testarg2", "testarg3"}
+		expectedOutput := "testarg3 testarg2 testarg1\n"
+
+		if err := app.Run(); err != nil {
+			t.Fatal(err)
+		}
+
+		cleanup() // Cleanup to flush stdout/err to disk
+		output, err := ioutil.ReadFile(stdout.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if string(output) != expectedOutput {
+			t.Errorf("Expected %#v, found %#v", expectedOutput, string(output))
+		}
+	})
+
+	t.Run("--version", func(t *testing.T) {
+		cleanup, stdout := redirectIO()
+		defer cleanup()
+
+		os.Args = []string{"testapp", "--version"}
+		expectedOutput := "testapp version undefined\n"
+
+		if err := app.Run(); err != nil {
+			t.Fatal(err)
+		}
+
+		cleanup() // Cleanup to flush stdout/err to disk
+		output, err := ioutil.ReadFile(stdout.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if string(output) != expectedOutput {
+			t.Errorf("Expected %q, found %q", expectedOutput, string(output))
+		}
+	})
+
+	t.Run("help", func(t *testing.T) {
+		cleanup, stdout := redirectIO()
+		defer cleanup()
+
+		os.Args = []string{"testapp", "help"}
+		expectedOutput, err := cli.Help(app, []string{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if err := app.Run(); err != nil {
+			t.Fatal(err)
+		}
+
+		cleanup() // Cleanup to flush stdout/err to disk
+		output, err := ioutil.ReadFile(stdout.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if string(output) != expectedOutput {
+			t.Errorf("--- Expected Output ---\n%s\n--- Actual Output ---\n%s\n", expectedOutput, string(output))
+		}
+	})
+
+	t.Run("invalid command", func(t *testing.T) {
+		os.Args = []string{"testapp", "cookies"}
+
+		err := app.Run()
+		if err == nil {
+			t.Error("expected error")
+		}
+
+		expectedOutput := "'cookies' is not a testapp command. See 'testapp --help'."
+
+		if err.Error() != expectedOutput {
+			t.Errorf("Expected %q, found %s", expectedOutput, err.Error())
+		}
+	})
+
+	t.Run("command not implemented", func(t *testing.T) {
+		os.Args = []string{"testapp", "todo"}
+
+		err := app.Run()
+		if err == nil {
+			t.Error("expected error")
+		}
+
+		expectedOutput := "not implemented"
+
+		if err.Error() != expectedOutput {
+			t.Errorf("Expected %q, found %s", expectedOutput, err.Error())
+		}
+	})
+
+	t.Run("command error", func(t *testing.T) {
+		os.Args = []string{"testapp", "error"}
+
+		err := app.Run()
+		if err == nil {
+			t.Error("expected error")
+		}
+
+		expectedOutput := "error error error!"
+
+		if err.Error() != expectedOutput {
+			t.Errorf("Expected %q, found %s", expectedOutput, err.Error())
+		}
+	})
+
+	t.Run("invalid program name", func(t *testing.T) {
+		app.Name = "has a space"
+
+		err := app.Run()
+		if err == nil {
+			t.Error("expected error")
+		}
+
+		expectedOutput := `program name ("has a space") must not contain spaces, try renaming the binary`
+
+		if err.Error() != expectedOutput {
+			t.Errorf("Expected %q, found %q", expectedOutput, err.Error())
+		}
+	})
+
+
 }
