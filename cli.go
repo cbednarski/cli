@@ -1,8 +1,26 @@
-// Package cli provides a simple way to quickly build command-line interfaces
-// like those seen in git, docker, go, vagrant, and other contemporary tools.
-// For example:
+// Package cli provides a way to quickly build command-line interfaces like
+// those seen in git, docker, go, vagrant, and other contemporary tools without
+// any boilerplate. For example:
 //
 //	program command arg1 arg2 arg3
+//
+// cli's types are designed to have safe defaults so you can leave them empty
+// and quickly prototype a program, filling in additional details as you go.
+// Here is a simple example program you can use as a starting point:
+//
+//	func main() {
+//		commands := map[string]*cli.Command{
+//			"go": {},
+//		}
+//
+//		app := &cli.CLI{
+//			Commands: commands,
+//		}
+//
+//		if err := app.Run(); err != nil {
+//			cli.ExitWithError(err)
+//		}
+//	}
 //
 // When a program is run without arguments, cli will display command help and
 // exit. As a result, cli is not particularly well-suited to building
