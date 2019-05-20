@@ -109,6 +109,22 @@ Did you like it? Make another and share it with your friends!
 	if output != expectedOutput {
 		t.Errorf("--- Expected Output ---\n%s\n--- Actual Output ---\n%s\n", expectedOutput, output)
 	}
+
+	// Verify we still get the correct formatting when header and footer are
+	// defined with extra newlines at beginning / end
+	app.Header = `
+It's time to enjoy something tasty
+`
+	app.Footer = `
+Did you like it? Make another and share it with your friends!
+`
+
+	output = cli.CommandHelp(app)
+
+	if output != expectedOutput {
+		t.Errorf("--- Expected Output ---\n%s\n--- Actual Output ---\n%s\n", expectedOutput, output)
+	}
+
 }
 
 func TestVersion(t *testing.T) {
@@ -131,6 +147,81 @@ func TestVersion(t *testing.T) {
 	if expectedOhOneOh != actualOnOneOh {
 		t.Errorf("Expected %q, found %q", expectedOhOneOh, actualOnOneOh)
 	}
+}
+
+func TestHelp(t *testing.T) {
+	app := &cli.CLI{
+		Name: "testapp",
+		Commands: map[string]*cli.Command{
+			"candy": {
+				Help: "There are many tasty varieties of candy. Here are some of the flavors you can choose from.",
+			},
+			"cookies": {
+				Help: "We don't support cookies directly, but here's how you can make some:",
+				HelpOnly: true,
+			},
+		},
+	}
+
+	t.Run("bare help command", func(tt *testing.T) {
+		output, err := cli.Help(app, []string{})
+		if err != nil {
+			tt.Fatal(err)
+		}
+
+		expectedOutput := `usage: testapp help <topic>
+
+Help Topics
+
+  candy (command)
+  cookies
+`
+
+		if output != expectedOutput {
+			tt.Errorf("--- Expected Output ---\n%s\n--- Actual Output ---\n%s\n", expectedOutput, output)
+		}
+	})
+
+	t.Run("help with command topic", func(tt *testing.T){
+		output, err := cli.Help(app, []string{"candy"})
+		if err != nil {
+			tt.Fatal(err)
+		}
+
+		expectedOutput := `candy Command Help
+
+There are many tasty varieties of candy. Here are some of the flavors you can choose from.
+`
+
+		if output != expectedOutput {
+			tt.Errorf("--- Expected Output ---\n%s\n--- Actual Output ---\n%s\n", expectedOutput, output)
+		}
+	})
+
+	t.Run("help with help-only topic", func (tt *testing.T) {
+		output, err := cli.Help(app, []string{"cookies"})
+		if err != nil {
+			tt.Fatal(err)
+		}
+
+		expectedOutput := `cookies Help
+
+We don't support cookies directly, but here's how you can make some:
+`
+
+		if output != expectedOutput {
+			tt.Errorf("--- Expected Output ---\n%s\n--- Actual Output ---\n%s\n", expectedOutput, output)
+		}
+
+	})
+
+	t.Run("missing help topic", func(tt *testing.T) {
+		_, err := cli.Help(app, []string{"cake"})
+		expectedError := "unknown help topic 'cake'"
+		if err.Error() != expectedError {
+			t.Errorf("Expected %q, found %q", expectedError, err.Error())
+		}
+	})
 }
 
 func TestParseArgs(t *testing.T) {

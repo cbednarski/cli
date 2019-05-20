@@ -105,10 +105,14 @@ func (c *CLI) Run() error {
 	// (non-printing characters, for example) but to be as permissive as
 	// possible for UTF-8 names we won't validate anything else.
 	if strings.ContainsAny(c.Name, " \n\t") {
-		panic(fmt.Sprintf("program name (%q) must not contain spaces, try renaming the binary", c.Name))
+		// This could happen because of user behavior so we'll error instead of
+		// panicking and give the user a chance to fix it.
+		return fmt.Errorf("program name (%q) must not contain spaces, try renaming the binary", c.Name)
 	}
 	for name := range c.Commands {
 		if strings.ContainsAny(name, " \n\t") {
+			// This is a programmer error and there's no way for the user to fix
+			// it so we'll just panic.
 			panic(fmt.Sprintf("command names (%q) must not contain spaces", name))
 		}
 	}
@@ -124,7 +128,11 @@ func (c *CLI) Run() error {
 		fmt.Println(Version(c))
 		return nil
 	case "help":
-		return Help(c, args)
+		output, err := Help(c, args)
+		if err != nil {
+			return err
+		}
+		fmt.Print(output)
 	}
 
 	command, ok := c.Commands[commandName]
@@ -287,37 +295,49 @@ func Version(c *CLI) string {
 	return fmt.Sprintf("%s version %s", c.Name, c.Version)
 }
 
-func Help(c *CLI, args []string) error {
+func Help(c *CLI, args []string) (output string, err error) {
 	switch len(args) {
 	case 0:
 		// Show help topics if nothing is specified
-		fmt.Printf("usage: %s help <topic>\n\nHelp Topics\n\n", c.Name)
+		output += fmt.Sprintf("usage: %s help <topic>\n\nHelp Topics\n\n", c.Name)
 		names := SortedCommandNames(c.Commands)
 		for _, topic := range names {
 			if !c.Commands[topic].Hidden && c.Commands[topic].Help != "" {
 				if c.Commands[topic].HelpOnly {
-					fmt.Printf("  %s\n", topic)
+					output += fmt.Sprintf("  %s\n", topic)
 				} else {
-					fmt.Printf("  %s (command)\n", topic)
+					output += fmt.Sprintf("  %s (command)\n", topic)
 				}
 			}
 		}
-		return nil
 	case 1:
 		// Show help for a single topic
 		topic := args[0]
-		help, ok := c.Commands[topic]
+		command, ok := c.Commands[topic]
 		if !ok {
-			return fmt.Errorf("unknown help topic '%s'", topic)
+			err = fmt.Errorf("unknown help topic '%s'", topic)
+			return
 		}
-		if strings.HasSuffix(help.Help, "\n") {
-			fmt.Printf("%s Help\n\n%s", topic, help.Help)
-		} else {
-			fmt.Printf("%s Help\n\n%s\n", topic, help.Help)
+
+		// Show the help topic
+		output += topic
+		// Show "Command Help" if the help topic is attached to a normal command
+		if !command.HelpOnly {
+			output += " Command"
 		}
+		output += " Help\n\n"
+		output += command.Help
+
+		// Ensure newline at end of output
+		if !strings.HasSuffix(command.Help, "\n") {
+			output += fmt.Sprint("\n")
+		}
+	default:
+		// TODO tweak this for subcommand help
+		err = ErrTooManyArguments
 	}
-	// TODO tweak this for subcommand help
-	return ErrTooManyArguments
+
+	return
 }
 
 // ParseArgs separates the command string from any subsequent arguments and
