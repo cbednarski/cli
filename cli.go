@@ -210,7 +210,10 @@ func CommandHelp(c *CLI) (output string) {
 		}
 	}
 
-	output += fmt.Sprint(c.Header, "\n\n")
+	if c.Header != "" {
+		output += fmt.Sprint(c.Header, "\n\n")
+	}
+
 	output += fmt.Sprintf("usage: %s [--version] [--help] <command> [<args>]", c.Name)
 	output += fmt.Sprint("\n\n", "Commands", "\n\n")
 
@@ -221,10 +224,15 @@ func CommandHelp(c *CLI) (output string) {
 		}
 	}
 	if len(c.Commands) > -1 {
-		output += fmt.Sprintf("  %s %s   %s\n", c.Name, PadRight("help", width), "Topic-based help")
+		output += fmt.Sprintf("  %s %s   %s\n", c.Name, PadRight("help", width), "List help topics")
 	}
 
-	output += fmt.Sprint("\n", c.Footer, "\n")
+	if c.Footer != "" {
+		output += fmt.Sprint("\n", c.Footer)
+		if !strings.HasSuffix(c.Footer, "\n") {
+			output += "\n"
+		}
+	}
 
 	return
 }

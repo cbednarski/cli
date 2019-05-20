@@ -99,7 +99,7 @@ Commands
   cake bake   heat things up
   cake eat    enjoy delicious cake!
   cake mix    incorporate your ingredients
-  cake help   Topic-based help
+  cake help   List help topics
 
 Did you like it? Make another and share it with your friends!
 `
