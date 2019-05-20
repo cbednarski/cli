@@ -228,8 +228,30 @@ func CommandHelp(c *CLI) (output string) {
 		}
 	}
 
-	if c.Header != "" {
-		output += fmt.Sprint(c.Header, "\n\n")
+	header := c.Header
+
+	if header != "" {
+		// Checking for a newline character at the start and end allows us to
+		// achieve the desired output format with a variety of natural string
+		// definitions in Go source code. For example, both of the following
+		// will produce the correct output format:
+		//
+		//	Header = "text goes here"
+		//
+		//	Header = `
+		//	text goes here
+		//	`
+		//
+		// We use the same approach for Footer, below.
+		if strings.HasPrefix(header, "\n") {
+			header = header[1:]
+		}
+		output += header
+		if strings.HasSuffix(header, "\n") {
+			output += "\n"
+		} else {
+			output += "\n\n"
+		}
 	}
 
 	output += fmt.Sprintf("usage: %s [--version] [--help] <command> [<args>]", c.Name)
@@ -246,7 +268,10 @@ func CommandHelp(c *CLI) (output string) {
 	}
 
 	if c.Footer != "" {
-		output += fmt.Sprint("\n", c.Footer)
+		if !strings.HasPrefix(c.Footer, "\n") {
+			output += "\n"
+		}
+		output += c.Footer
 		if !strings.HasSuffix(c.Footer, "\n") {
 			output += "\n"
 		}
