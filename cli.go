@@ -1,12 +1,12 @@
-// Package cli provides a simple way to build verb or verb-noun command-line
-// interfaces such as those seen in git, docker, ip, vagrant, and other
-// contemporary tools. For example:
+// Package cli provides a simple way to quickly build command-line interfaces
+// like those seen in git, docker, go, vagrant, and other contemporary tools.
+// For example:
 //
 //	program command arg1 arg2 arg3
 //
 // When a program is run without arguments, cli will display command help and
 // exit. As a result, cli is not particularly well-suited to building
-// traditional unix tools like ls, top, or grep. For simpler tools like these,
+// traditional unix tools like ls, top, or grep. To build interfaces like these
 // you may prefer Go's stdlib flag package.
 package cli
 
@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	ErrNotImplemented = errors.New("not implemented")
+	ErrNotImplemented   = errors.New("not implemented")
 	ErrTooManyArguments = errors.New("too many arguments")
 )
 
@@ -237,14 +237,18 @@ func Version(c *CLI) string {
 }
 
 func Help(c *CLI, args []string) error {
-	switch len(args){
+	switch len(args) {
 	case 0:
 		// Show help topics if nothing is specified
 		fmt.Printf("usage: %s help <topic>\n\nHelp Topics\n\n", c.Name)
 		names := SortedCommandNames(c.Commands)
 		for _, topic := range names {
 			if !c.Commands[topic].Hidden && c.Commands[topic].Help != "" {
-				fmt.Printf("  %s\n", topic)
+				if c.Commands[topic].HelpOnly {
+					fmt.Printf("  %s\n", topic)
+				} else {
+					fmt.Printf("  %s (command)\n", topic)
+				}
 			}
 		}
 		return nil
@@ -261,6 +265,7 @@ func Help(c *CLI, args []string) error {
 			fmt.Printf("%s Help\n\n%s\n", topic, help.Help)
 		}
 	}
+	// TODO tweak this for subcommand help
 	return ErrTooManyArguments
 }
 

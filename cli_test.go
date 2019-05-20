@@ -14,8 +14,8 @@ import (
 
 func TestCLI_Run(t *testing.T) {
 	backup := os.Args
-	os.Args = []string{"testapp","testcommand","testarg1","testarg2","testarg3"}
-	defer func() {os.Args = backup}()
+	os.Args = []string{"testapp", "testcommand", "testarg1", "testarg2", "testarg3"}
+	defer func() { os.Args = backup }()
 
 	var output []string
 	expectedOutput := []string{"testarg3", "testarg2", "testarg1"}
@@ -25,7 +25,7 @@ func TestCLI_Run(t *testing.T) {
 			"testcommand": {
 				Run: func(args []string) error {
 					// reverse the list of args
-					for i := len(args)-1; i >= 0; i-- {
+					for i := len(args) - 1; i >= 0; i-- {
 						output = append(output, args[i])
 					}
 					return nil
@@ -45,11 +45,11 @@ func TestCLI_Run(t *testing.T) {
 
 func TestSortedCommandNames(t *testing.T) {
 	commands := map[string]*cli.Command{
-		"map": {},
+		"map":    {},
 		"filter": {},
 		"reduce": {},
-		"find": {},
-		"keys": {},
+		"find":   {},
+		"keys":   {},
 	}
 
 	expected := []string{
@@ -84,9 +84,9 @@ func TestCommandHelp(t *testing.T) {
 	}
 
 	app := &cli.CLI{
-		Header: "It's time to enjoy something tasty",
-		Name: "cake",
-		Footer: "Did you like it? Make another and share it with your friends!",
+		Header:   "It's time to enjoy something tasty",
+		Name:     "cake",
+		Footer:   "Did you like it? Make another and share it with your friends!",
 		Commands: commands,
 	}
 
@@ -135,31 +135,31 @@ func TestVersion(t *testing.T) {
 
 func TestParseArgs(t *testing.T) {
 	type TestCase struct {
-		Input []string
+		Input           []string
 		ExpectedCommand string
-		ExpectedArgs []string
+		ExpectedArgs    []string
 	}
 
 	cases := []TestCase{
 		{
-			Input: []string{"cat", "file1", "file2"},
+			Input:           []string{"cat", "file1", "file2"},
 			ExpectedCommand: "cat",
-			ExpectedArgs: []string{"file1", "file2"},
+			ExpectedArgs:    []string{"file1", "file2"},
 		},
 		{
-			Input: []string{},
+			Input:           []string{},
 			ExpectedCommand: "",
-			ExpectedArgs: []string{},
+			ExpectedArgs:    []string{},
 		},
 		{
-			Input: []string{"cat"},
+			Input:           []string{"cat"},
 			ExpectedCommand: "cat",
-			ExpectedArgs: []string{},
+			ExpectedArgs:    []string{},
 		},
 		{
-			Input: []string{"cat", "file1"},
+			Input:           []string{"cat", "file1"},
 			ExpectedCommand: "cat",
-			ExpectedArgs: []string{"file1"},
+			ExpectedArgs:    []string{"file1"},
 		},
 	}
 
@@ -178,25 +178,25 @@ func TestParseArgs(t *testing.T) {
 
 func TestPadRight(t *testing.T) {
 	type TestCase struct {
-		Str string
-		Width int
+		Str      string
+		Width    int
 		Expected string
 	}
 
 	cases := []TestCase{
 		{
-			Str: "candy",
-			Width: 10,
+			Str:      "candy",
+			Width:    10,
 			Expected: "candy     ",
 		},
 		{
-			Str: "",
-			Width: -5,
+			Str:      "",
+			Width:    -5,
 			Expected: "",
 		},
 		{
-			Str: "waka",
-			Width: 2,
+			Str:      "waka",
+			Width:    2,
 			Expected: "waka",
 		},
 	}

@@ -1,21 +1,43 @@
 # CLI
 
-CLI is designed to help you quickly build _verb-noun_ interfaces like those found in `git`, `docker`, `go`, `lxc`, `packer`, and other contemporary programs.
+CLI is designed to help you quickly build command interfaces like those found in `git`, `docker`, `go`, `vagrant`, and other contemporary tools.
 
-    program-name command-name arg1 arg2 arg3 ...
+	program-name command-name arg1 arg2 arg3 ...
 
-CLI is designed to have valid defaults so you may skip defining fields you don't need or care about. For more details, see the package documentation.
+## Design Goals
 
-## Built-in Features
-
-CLI includes a few built-in features that every program should have
+CLI includes a few built-in features that every program should have.
 
 - `program-name --version` displays the program's version
 - `program-name --help` displays **command help** (a list of available commands)
-- `program-name help` can be invoked to show help about commands or other topics 
+- `program-name help` can be invoked to show help about commands or other topics
 - Running `program-name` without additional parameters will display command help
 
+CLI's data types are designed to have valid defaults so you may safely run a program with nothing defined (though it won't do anything interesting). This facilitates prototyping and development while still producing correct behavior.
+
+For more details, see the package documentation.
+
 ## Examples
+
+### Empty Program
+
+This is a valid CLI app (that doesn't do much)
+
+	func main() {
+		commands := map[string]*cli.Command{
+			"my-first-command": {},
+		},
+
+		app := &cli.CLI{
+			Commands: commands,
+		}
+
+		if err := app.Run(); err != nil {
+			cli.ExitWithError(err)
+		}
+	}
+
+You can start with this and gradually specify commands or properties as you write your application.
 
 ### Defining Commands
 
@@ -54,7 +76,7 @@ Let's say we were building a git clone. We could start out like so:
 		}
 
 		if err := app.Run(); err != nil {
-		    // If there is an error, write to stderr and exit(1)
+			// If there is an error, write to stderr and exit(1)
 			cli.ExitWithError(err)
 		}
 	}
