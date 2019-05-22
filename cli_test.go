@@ -129,7 +129,7 @@ func TestHelp(t *testing.T) {
 				Help: "There are many tasty varieties of candy. Here are some of the flavors you can choose from.",
 			},
 			"cookies": {
-				Help: "We don't support cookies directly, but here's how you can make some:",
+				Help:     "We don't support cookies directly, but here's how you can make some:",
 				HelpOnly: true,
 			},
 		},
@@ -154,7 +154,7 @@ Help Topics
 		}
 	})
 
-	t.Run("help with command topic", func(tt *testing.T){
+	t.Run("help with command topic", func(tt *testing.T) {
 		output, err := cli.Help(app, []string{"candy"})
 		if err != nil {
 			tt.Fatal(err)
@@ -170,7 +170,7 @@ There are many tasty varieties of candy. Here are some of the flavors you can ch
 		}
 	})
 
-	t.Run("help with help-only topic", func (tt *testing.T) {
+	t.Run("help with help-only topic", func(tt *testing.T) {
 		output, err := cli.Help(app, []string{"cookies"})
 		if err != nil {
 			tt.Fatal(err)
@@ -328,7 +328,7 @@ func TestCLI_Run(t *testing.T) {
 				},
 				Help: "All arguments passed to the command will be displayed in reverse order",
 			},
-			"todo":{},
+			"todo": {},
 			"error": {
 				Run: func(args []string) error {
 					return fmt.Errorf("error error error!")
@@ -396,7 +396,7 @@ func TestCLI_Run(t *testing.T) {
 		}
 	})
 
-	t.Run("command invocation", func(t *testing.T){
+	t.Run("command invocation", func(t *testing.T) {
 		cleanup, stdout := redirectIO()
 		defer cleanup()
 
@@ -524,6 +524,5 @@ func TestCLI_Run(t *testing.T) {
 			t.Errorf("Expected %q, found %q", expectedOutput, err.Error())
 		}
 	})
-
 
 }
