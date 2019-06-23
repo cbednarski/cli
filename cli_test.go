@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"git.stormbase.io/cbednarski/cli"
+	"github.com/cbednarski/cli"
 )
 
 func TestSortedCommandNames(t *testing.T) {
