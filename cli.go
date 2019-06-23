@@ -225,6 +225,24 @@ func SortedCommandNames(commands map[string]*Command) []string {
 	return ordered
 }
 
+// EnsureNewlines checks for a newline character at the start and end of the
+// specified text, and allows us to achieve consistent formatting with a variety
+// of string declarations from Go source code.
+//
+// The following rules are enforced:
+//
+// - An initial newline character is removed if it is present
+// - A trailing newline character is added if one is not present
+func EnsureNewlines(text string) string {
+	if strings.HasPrefix(text, "\n") {
+		text = text[1:]
+	}
+	if !strings.HasSuffix(text, "\n") {
+		text += "\n"
+	}
+	return text
+}
+
 // CommandHelp
 func CommandHelp(c *CLI) (output string) {
 	names := SortedCommandNames(c.Commands)
@@ -240,27 +258,7 @@ func CommandHelp(c *CLI) (output string) {
 	header := c.Header
 
 	if header != "" {
-		// Checking for a newline character at the start and end allows us to
-		// achieve the desired output format with a variety of natural string
-		// definitions in Go source code. For example, both of the following
-		// will produce the correct output format:
-		//
-		//	Header = "text goes here"
-		//
-		//	Header = `
-		//	text goes here
-		//	`
-		//
-		// We use the same approach for Footer, below.
-		if strings.HasPrefix(header, "\n") {
-			header = header[1:]
-		}
-		output += header
-		if strings.HasSuffix(header, "\n") {
-			output += "\n"
-		} else {
-			output += "\n\n"
-		}
+		output += EnsureNewlines(header) + "\n"
 	}
 
 	output += fmt.Sprintf("usage: %s [--version] [--help] <command> [<args>]", c.Name)
@@ -277,13 +275,7 @@ func CommandHelp(c *CLI) (output string) {
 	}
 
 	if c.Footer != "" {
-		if !strings.HasPrefix(c.Footer, "\n") {
-			output += "\n"
-		}
-		output += c.Footer
-		if !strings.HasSuffix(c.Footer, "\n") {
-			output += "\n"
-		}
+		output += "\n" + EnsureNewlines(c.Footer)
 	}
 
 	return
@@ -327,12 +319,7 @@ func Help(c *CLI, args []string) (output string, err error) {
 			output += " Command"
 		}
 		output += " Help\n\n"
-		output += command.Help
-
-		// Ensure newline at end of output
-		if !strings.HasSuffix(command.Help, "\n") {
-			output += fmt.Sprint("\n")
-		}
+		output += EnsureNewlines(command.Help)
 	default:
 		// TODO tweak this for subcommand help
 		err = ErrTooManyArguments
